@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "Review the conversation that just happened. If any meaningful changes were made to the codebase (new features, architectural changes, new patterns, renamed files, changed constants, etc.), update CLAUDE.md to reflect the current state of the project. Keep CLAUDE.md concise — only update sections where something actually changed. If nothing significant changed, do nothing. Do not commit.",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
