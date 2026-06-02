@@ -178,13 +178,32 @@ function App(){
   /* Summary */
   const activeGuests = [];
   const upcomingGuests = [];
+  const pastGuests = [];
+  const thisYear = today.getFullYear();
+  const yearStart = `${thisYear}-01-01`;
+  const yearEnd   = `${thisYear}-12-31`;
+  let yearGuests = 0, yearNights = 0;
+
   ROOMS.forEach(room=>{
     (bk[room.id]||[]).forEach(b=>{
-      if(b.s<=todayKey&&b.e>=todayKey) activeGuests.push({...b,room});
-      else if(b.s>todayKey) upcomingGuests.push({...b,room,daysUntil:diffDays(todayKey,b.s)});
+      if(b.s<=todayKey&&b.e>=todayKey){
+        activeGuests.push({...b,room});
+      } else if(b.s>todayKey){
+        upcomingGuests.push({...b,room,daysUntil:diffDays(todayKey,b.s)});
+      } else if(b.e<todayKey){
+        pastGuests.push({...b,room,nightsStayed:diffDays(b.s,b.e)});
+      }
+      // Year stats: any stay overlapping this calendar year
+      if(b.s<=yearEnd && b.e>=yearStart){
+        yearGuests++;
+        const os = b.s<yearStart ? yearStart : b.s;
+        const oe = b.e>yearEnd   ? yearEnd   : b.e;
+        yearNights += diffDays(os, oe);
+      }
     });
   });
   upcomingGuests.sort((a,b)=>a.daysUntil-b.daysUntil);
+  pastGuests.sort((a,b)=>b.e.localeCompare(a.e));
 
   const totalBookings = Object.values(bk).flat().length;
 
@@ -328,34 +347,44 @@ function App(){
 
       {/* ─── SUMMARY ────────────────────────────────────────────── */}
       {t.showSummary && (
-        <div style={{
-          marginTop:22,
-          display:"grid",
-          gridTemplateColumns:"1fr 1fr",
-          gap:18,
-          position:"relative",zIndex:1,
-        }}>
-          <SummaryCard
+        <div style={{position:"relative",zIndex:1}}>
+          <div style={{
+            marginTop:22,
+            display:"grid",
+            gridTemplateColumns:"1fr 1fr",
+            gap:18,
+          }}>
+            <SummaryCard
+              C={C}
+              label="On the hill now"
+              count={activeGuests.length}
+              empty="no one here, all quiet"
+              items={activeGuests.map(g=>({
+                key:g.id, name:g.name, col:g.col, room:g.room,
+                right: `until ${fmtHuman(g.e)}`,
+                rightTone:"muted",
+              }))}
+            />
+            <SummaryCard
+              C={C}
+              label="Coming up"
+              count={upcomingGuests.length}
+              empty="nothing on the horizon"
+              items={upcomingGuests.slice(0,4).map(g=>({
+                key:g.id, name:g.name, col:g.col, room:g.room,
+                right: g.daysUntil===0?"today":g.daysUntil===1?"tomorrow":`in ${g.daysUntil}d`,
+                rightTone: g.daysUntil<=3?"accent":"muted",
+              }))}
+            />
+          </div>
+
+          {/* ─── YEAR STATS + HISTORY ───────────────────────────── */}
+          <HistoryCard
             C={C}
-            label="On the hill now"
-            count={activeGuests.length}
-            empty="no one here, all quiet"
-            items={activeGuests.map(g=>({
-              key:g.id, name:g.name, col:g.col, room:g.room,
-              right: `until ${fmtHuman(g.e)}`,
-              rightTone:"muted",
-            }))}
-          />
-          <SummaryCard
-            C={C}
-            label="Coming up"
-            count={upcomingGuests.length}
-            empty="nothing on the horizon"
-            items={upcomingGuests.slice(0,4).map(g=>({
-              key:g.id, name:g.name, col:g.col, room:g.room,
-              right: g.daysUntil===0?"today":g.daysUntil===1?"tomorrow":`in ${g.daysUntil}d`,
-              rightTone: g.daysUntil<=3?"accent":"muted",
-            }))}
+            year={thisYear}
+            yearGuests={yearGuests}
+            yearNights={yearNights}
+            pastGuests={pastGuests}
           />
         </div>
       )}
@@ -935,6 +964,119 @@ function SummaryCard({C, label, count, empty, items}){
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── History card ───────────────────────────────────────────────── */
+function HistoryCard({C, year, yearGuests, yearNights, pastGuests}){
+  const [expanded, setExpanded] = React.useState(false);
+  const shown = expanded ? pastGuests : pastGuests.slice(0, 5);
+
+  return (
+    <div style={{
+      marginTop:18,
+      background:C.surface,
+      border:`1px solid ${C.border}`,
+      borderRadius:14,
+      padding:"18px 20px 16px",
+      boxShadow:`0 1px 0 ${C.border}`,
+    }}>
+      {/* Year stats banner */}
+      <div style={{
+        display:"flex",alignItems:"center",justifyContent:"space-between",
+        marginBottom: pastGuests.length > 0 ? 18 : 0,
+        flexWrap:"wrap",gap:12,
+      }}>
+        <div style={{
+          fontSize:11,fontWeight:600,color:C.muted,
+          letterSpacing:".12em",textTransform:"uppercase",
+        }}>
+          {year} — history
+        </div>
+        <div style={{display:"flex",gap:20,alignItems:"baseline"}}>
+          <span style={{display:"inline-flex",alignItems:"baseline",gap:5}}>
+            <strong style={{fontSize:22,fontWeight:700,color:C.text,letterSpacing:"-0.02em"}}>{yearGuests}</strong>
+            <span style={{fontSize:12,color:C.muted}}>guests</span>
+          </span>
+          <span style={{width:3,height:3,borderRadius:"50%",background:C.light,display:"inline-block",alignSelf:"center"}}/>
+          <span style={{display:"inline-flex",alignItems:"baseline",gap:5}}>
+            <strong style={{fontSize:22,fontWeight:700,color:C.text,letterSpacing:"-0.02em"}}>{yearNights}</strong>
+            <span style={{fontSize:12,color:C.muted}}>nights</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Past bookings list */}
+      {pastGuests.length === 0 ? (
+        <div style={{
+          fontSize:14,color:C.light,
+          fontFamily:`'Instrument Serif', 'Onest', serif`,
+          fontStyle:"italic",
+          padding:"4px 0",
+        }}>no past stays yet</div>
+      ) : (
+        <>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {shown.map(g=>(
+              <div key={g.id} style={{
+                display:"flex",alignItems:"center",gap:10,
+                padding:"8px 12px",
+                background:C.sunken,
+                borderRadius:9,
+              }}>
+                <span style={{
+                  width:8,height:8,borderRadius:"50%",
+                  background:g.col,
+                  boxShadow:`0 0 0 3px ${g.col}22`,
+                  flexShrink:0,
+                }}/>
+                <span style={{
+                  fontSize:13.5,fontWeight:600,color:C.text,
+                  whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",
+                  minWidth:0,flex:"0 1 auto",
+                }}>{g.name}</span>
+                <img
+                  src={g.room.icon}
+                  alt={g.room.glyph}
+                  style={{height:20,width:"auto",display:"block",flexShrink:0,opacity:0.75}}
+                  draggable="false"
+                />
+                <span style={{flex:1}}/>
+                <span style={{fontSize:11,color:C.light,flexShrink:0}}>
+                  {fmtHuman(g.s)} – {fmtHuman(g.e)}
+                </span>
+                <span style={{
+                  fontSize:11,color:C.muted,
+                  background:C.border,
+                  borderRadius:99,
+                  padding:"2px 8px",
+                  flexShrink:0,
+                  fontVariantNumeric:"tabular-nums",
+                }}>
+                  {g.nightsStayed}n
+                </span>
+              </div>
+            ))}
+          </div>
+          {pastGuests.length > 5 && (
+            <button onClick={()=>setExpanded(v=>!v)} style={{
+              marginTop:12,
+              width:"100%",
+              padding:"8px",
+              border:`1px solid ${C.border}`,
+              borderRadius:8,
+              background:"transparent",
+              color:C.muted,
+              fontSize:12,fontWeight:500,
+              cursor:"pointer",
+              fontFamily:"inherit",
+            }}>
+              {expanded ? "show less" : `show all ${pastGuests.length}`}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
