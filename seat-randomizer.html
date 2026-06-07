@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iceland Seat Randomizer</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0e1116;
+      color: #f4f4f4;
+      padding: 24px;
+      max-width: 700px;
+      margin: auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #aab2c0;
+      margin-bottom: 24px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      border-radius: 14px;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      box-sizing: border-box;
+      background: #1b2029;
+      color: #fff;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: #d7ff5f;
+      color: #111;
+      font-weight: 800;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .result {
+      margin-top: 24px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: #1b2029;
+      border: 1px solid #2d3440;
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .seat {
+      color: #8ea0ff;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .name {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .prophecy {
+      margin-top: 24px;
+      padding: 18px;
+      background: #161b22;
+      border-left: 4px solid #d7ff5f;
+      border-radius: 12px;
+      color: #d6d6d6;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌋 Iceland Seat Randomizer</h1>
+  <div class="subtitle">Восемь людей. Две машины. Один баран. Судьба, пристегнись.</div>
+
+  <textarea id="names">Маша
+Саша
+Человек 3
+Человек 4
+Человек 5
+Человек 6
+Человек 7
+Человек 8</textarea>
+
+  <button onclick="randomizeSeats()">🎲 Распределить места</button>
+
+  <div class="result" id="result"></div>
+
+  <div class="prophecy" id="prophecy">
+    Сегодня мы закапываем барана, знакомимся и смотрим водопады.
+  </div>
+
+  <script>
+    const seats = [
+      "Маша — переднее",
+      "Маша — заднее справа",
+      "Маша — заднее слева",
+      "Саша — переднее 1",
+      "Саша — переднее 2",
+      "Саша — второй ряд 1",
+      "Саша — второй ряд 2",
+      "Саша — второй ряд 3"
+    ];
+
+    const prophecies = [
+      "Сегодня кто-то станет главным поставщиком абсурдных комментариев.",
+      "У одного человека будет слишком сильный контакт с ветром. Ветер победит.",
+      "Лучший кадр дня случится не там, где все его ждут.",
+      "Баран знает больше, чем говорит.",
+      "Кто-то в машине случайно станет экскурсоводом, хотя никто его не назначал.",
+      "Водопад будет драматичнее большинства людей, но не всех.",
+      "Сегодня родится внутренний мем группы. Береги его.",
+      "Один разговор начнётся как small talk, а закончится философской ямой."
+    ];
+
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function randomizeSeats() {
+      const names = document.getElementById("names").value
+        .split("\n")
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+
+      if (names.length !== 8) {
+        alert("Нужно ровно 8 человек, не жульничай, Маша 😏");
+        return;
+      }
+
+      const shuffledNames = shuffle(names);
+      const result = document.getElementById("result");
+      result.innerHTML = "";
+
+      seats.forEach((seat, index) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <div class="seat">${seat}</div>
+          <div class="name">${shuffledNames[index]}</div>
+        `;
+
+        result.appendChild(card);
+      });
+
+      const prophecy = prophecies[Math.floor(Math.random() * prophecies.length)];
+      document.getElementById("prophecy").innerText =
+        "🔮 Предсказание дня: " + prophecy;
+    }
+  </script>
+
+</body>
+</html>
